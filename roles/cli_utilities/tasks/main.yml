@@ -1,0 +1,29 @@
+---
+- name: Install essential CLI tools
+  apt:
+    name:
+      - tree
+      - curl
+      - htop
+      - ncdu
+      - tldr
+      - jq
+      - wget
+      - unzip
+      - zip
+    state: present
+
+- name: Install development tools
+  apt:
+    name:
+      - build-essential
+    state: present
+
+- name: Install additional CLI tools
+  apt:
+    name:
+      - ripgrep
+      - bat
+      - fzf
+      - tmux
+    state: present

@@ -1,0 +1,219 @@
+---
+- name: Get the current user info
+  shell: echo $HOME
+  register: user_home
+  changed_when: false
+  become: no
+
+- name: Set asdf variables
+  set_fact:
+    asdf_home: "{{ user_home.stdout }}"
+
+- name: Install required system dependencies
+  apt:
+    name:
+      - git
+      - curl
+      - build-essential
+      - autoconf
+      - libssl-dev
+      - libncurses5-dev
+      - m4
+      - unzip
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Check if asdf is already installed
+  stat:
+    path: "{{ asdf_home }}/.asdf"
+  become: no
+  register: asdf_dir
+
+- name: Get latest asdf version
+  uri:
+    url: https://api.github.com/repos/asdf-vm/asdf/releases/latest
+    return_content: yes
+  register: asdf_latest
+  when: not asdf_dir.stat.exists
+
+- name: Debug tag_name extraction
+  debug:
+    msg: "Tag name: {{ asdf_latest.json.tag_name }}"
+  when: asdf_latest is defined
+
+- name: Clone asdf repository
+  git:
+    repo: https://github.com/asdf-vm/asdf.git
+    dest: "{{ asdf_home }}/.asdf"
+    version: "{{ asdf_latest.json.tag_name }}"
+    force: yes
+    update: yes
+  become: no
+  when: not asdf_dir.stat.exists
+
+- name: Add asdf to bashrc
+  blockinfile:
+    path: "{{ asdf_home }}/.bashrc"
+    block: |
+      . "$HOME/.asdf/asdf.sh"
+      [ -f "$HOME/.asdf/completions/asdf.bash" ] && . "$HOME/.asdf/completions/asdf.bash"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
+    create: yes
+  become: no
+  register: bashrc_result
+
+- name: Check if Erlang plugin is installed
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf plugin list | grep -q erlang
+  args:
+    executable: /bin/bash
+  become: no
+  register: erlang_plugin_check
+  changed_when: false
+  failed_when: false
+
+- name: Add Erlang plugin to asdf
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+  args:
+    executable: /bin/bash
+  become: no
+  when: erlang_plugin_check.rc != 0
+
+- name: Check if Elixir plugin is installed
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf plugin list | grep -q elixir
+  args:
+    executable: /bin/bash
+  become: no
+  register: elixir_plugin_check
+  changed_when: false
+  failed_when: false
+
+- name: Add Elixir plugin to asdf
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
+  args:
+    executable: /bin/bash
+  become: no
+  when: elixir_plugin_check.rc != 0
+
+- name: Get latest Erlang version
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf list all erlang | grep -v -E 'rc|master' | tail -1
+  args:
+    executable: /bin/bash
+  become: no
+  register: latest_erlang
+  changed_when: false
+
+- name: Check if latest Erlang version is installed
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf list erlang | grep -q "{{ latest_erlang.stdout }}"
+  args:
+    executable: /bin/bash
+  become: no
+  register: erlang_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Install latest Erlang
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf install erlang {{ latest_erlang.stdout }}
+  args:
+    executable: /bin/bash
+  become: no
+  when: erlang_version_check.rc != 0
+
+- name: Set global Erlang version
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf global erlang {{ latest_erlang.stdout }}
+  args:
+    executable: /bin/bash
+  become: no
+  when: erlang_version_check.rc != 0
+
+- name: Get latest Elixir version
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf list all elixir | grep -v -E 'rc|master|otp' | tail -1
+  args:
+    executable: /bin/bash
+  become: no
+  register: latest_elixir
+  changed_when: false
+
+- name: Check if latest Elixir version is installed
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf list elixir | grep -q "{{ latest_elixir.stdout }}"
+  args:
+    executable: /bin/bash
+  become: no
+  register: elixir_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Install latest Elixir
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf install elixir {{ latest_elixir.stdout }}
+  args:
+    executable: /bin/bash
+  become: no
+  when: elixir_version_check.rc != 0
+
+- name: Set global Elixir version
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    asdf global elixir {{ latest_elixir.stdout }}
+  args:
+    executable: /bin/bash
+  become: no
+  when: elixir_version_check.rc != 0
+
+- name: Verify Elixir installation
+  shell: |
+    export ASDF_DIR="{{ asdf_home }}/.asdf"
+    . {{ asdf_home }}/.asdf/asdf.sh
+    elixir --version
+  args:
+    executable: /bin/bash
+  become: no
+  register: elixir_verify
+  changed_when: false
+
+- name: Display Elixir version
+  debug:
+    msg: "{{ elixir_verify.stdout }}"
+
+- name: Remind user to source bashrc
+  debug:
+    msg: |
+      ✓ Elixir installed successfully!
+      
+      To use elixir, iex, and erl commands, run:
+        source ~/.bashrc
+      
+      Or open a new terminal session.

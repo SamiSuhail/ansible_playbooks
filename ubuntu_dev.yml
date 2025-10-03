@@ -1,0 +1,10 @@
+---
+- name: Setup Ubuntu Development Environment
+  hosts: localhost
+  become: yes
+
+  roles:
+    - cli_utilities
+    - chrome
+    - elixir_asdf
+    - vscode
