@@ -81,6 +81,10 @@ fi
 step "Step 6: Running Ansible playbook..."
 ansible-playbook "$PLAYBOOK_PATH"
 
+step "Step 7: Source dotfiles..."
+source ~/.bash_profile
+source ~/.bashrc
+
 echo ""
 echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}Setup Complete!${NC}"
