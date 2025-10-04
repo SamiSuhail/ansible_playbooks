@@ -1,0 +1,79 @@
+---
+- name: Ensure cron is installed
+  ansible.builtin.apt:
+    name: cron
+    state: present
+  become: yes
+
+- name: Enable and start cron service
+  ansible.builtin.systemd:
+    name: cron
+    enabled: yes
+    state: started
+  become: yes
+
+- name: Add Timeshift PPA
+  ansible.builtin.apt_repository:
+    repo: ppa:teejee2008/timeshift
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Install Timeshift
+  ansible.builtin.apt:
+    name: timeshift
+    state: present
+  become: yes
+  register: timeshift_installed
+
+- name: Ensure Timeshift config directory exists
+  ansible.builtin.file:
+    path: /etc/timeshift
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: Get largest partition for backups
+  ansible.builtin.shell: |
+    df -h --output=target,size | grep -v "Mounted" | grep -v "tmpfs" | grep -v "/boot" | sort -k2 -hr | head -1 | awk '{print $1}'
+  register: largest_partition
+  changed_when: false
+  become: yes
+
+- name: Configure Timeshift
+  ansible.builtin.copy:
+    dest: /etc/timeshift/timeshift.json
+    content: |
+      {
+        "backup_device_uuid" : "{{ ansible_mounts | selectattr('mount', 'equalto', largest_partition.stdout) | map(attribute='uuid') | first }}",
+        "parent_device_uuid" : "",
+        "do_first_run" : "false",
+        "btrfs_mode" : "false",
+        "include_btrfs_home_for_backup" : "false",
+        "include_btrfs_home_for_restore" : "false",
+        "stop_cron_emails" : "true",
+        "schedule_monthly" : "false",
+        "schedule_weekly" : "true",
+        "schedule_daily" : "true",
+        "schedule_hourly" : "true",
+        "schedule_boot" : "false",
+        "count_monthly" : "0",
+        "count_weekly" : "2",
+        "count_daily" : "5",
+        "count_hourly" : "8",
+        "count_boot" : "0",
+        "snapshot_size" : "0",
+        "snapshot_count" : "0",
+        "date_format" : "%Y-%m-%d %H:%M:%S",
+        "exclude" : [
+        ],
+        "exclude-apps" : [
+        ]
+      }
+    mode: '0644'
+  become: yes
+
+- name: Create initial backup
+  ansible.builtin.command: timeshift --create --comments "Initial backup created by Ansible" --tags D
+  become: yes
+  when: timeshift_installed.changed

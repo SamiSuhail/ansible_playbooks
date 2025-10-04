@@ -4,6 +4,7 @@
   become: yes
 
   roles:
+    - timeshift_backup
     - cli_utilities
     - chrome
     - elixir_asdf

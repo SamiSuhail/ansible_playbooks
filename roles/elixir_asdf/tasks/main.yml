@@ -40,6 +40,7 @@
 - name: Set latest asdf version
   set_fact:
     asdf_latest_version: "{{ asdf_latest.json.tag_name }}"
+  when: not asdf_latest.skipped and asdf_latest.changed
 
 - name: Debug tag_name extraction
   debug:
