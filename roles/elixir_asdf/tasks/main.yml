@@ -40,7 +40,7 @@
 - name: Set latest asdf version
   set_fact:
     asdf_latest_version: "{{ asdf_latest.json.tag_name }}"
-  when: not asdf_latest.skipped and asdf_latest.changed
+  when: "'json' in asdf_latest and asdf_latest.json is defined"
 
 - name: Debug tag_name extraction
   debug:
@@ -83,7 +83,6 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
     create: yes
   become: no
-  register: bash_profile_result
 
 - name: Add asdf to bashrc
   blockinfile:
@@ -93,126 +92,117 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
     create: yes
   become: no
-  register: bashrc_result
 
-- name: Check if Erlang plugin is installed
-  shell: |
-    asdf plugin list | grep -q erlang
-  args:
-    executable: /bin/bash
+- name: Install and configure Erlang and Elixir with asdf
+  block:
+    - name: Check if Erlang plugin is installed
+      shell: asdf plugin list | grep -q erlang
+      args:
+        executable: /bin/bash
+      register: erlang_plugin_check
+      changed_when: false
+      failed_when: false
+
+    - name: Add Erlang plugin to asdf
+      shell: |
+        asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+      args:
+        executable: /bin/bash
+      when: erlang_plugin_check.rc != 0
+
+    - name: Check if Elixir plugin is installed
+      shell: |
+        asdf plugin list | grep -q elixir
+      args:
+        executable: /bin/bash
+      register: elixir_plugin_check
+      changed_when: false
+      failed_when: false
+
+    - name: Add Elixir plugin to asdf
+      shell: |
+        asdf plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
+      args:
+        executable: /bin/bash
+      when: elixir_plugin_check.rc != 0
+
+    - name: Get latest Erlang version
+      shell: |
+        asdf list all erlang | grep -v -E 'rc|master' | tail -2 | head -1
+      args:
+        executable: /bin/bash
+      register: latest_erlang
+      changed_when: false
+
+    - name: Check if latest Erlang version is installed
+      shell: |
+        asdf list erlang | grep -q "{{ latest_erlang.stdout }}"
+      args:
+        executable: /bin/bash
+      register: erlang_version_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install latest Erlang
+      shell: |
+        asdf install erlang {{ latest_erlang.stdout }}
+      args:
+        executable: /bin/bash
+      when: erlang_version_check.rc != 0
+
+    - name: Set global Erlang version
+      shell: |
+        asdf set --home erlang {{ latest_erlang.stdout }}
+      args:
+        executable: /bin/bash
+      when: erlang_version_check.rc != 0
+
+    - name: Get latest Elixir version
+      shell: |
+        asdf list all elixir | grep -v -E 'rc|master|otp' | tail -2 | head -1
+      args:
+        executable: /bin/bash
+      register: latest_elixir
+      changed_when: false
+
+    - name: Check if latest Elixir version is installed
+      shell: |
+        asdf list elixir | grep -q "{{ latest_elixir.stdout }}"
+      args:
+        executable: /bin/bash
+      register: elixir_version_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install latest Elixir
+      shell: |
+        asdf install elixir {{ latest_elixir.stdout }}
+      args:
+        executable: /bin/bash
+      when: elixir_version_check.rc != 0
+
+    - name: Set global Elixir version
+      shell: |
+        asdf set --home elixir {{ latest_elixir.stdout }}
+      args:
+        executable: /bin/bash
+      when: elixir_version_check.rc != 0
+
+    - name: Verify Elixir installation
+      shell: |
+        elixir --version
+      args:
+        executable: /bin/bash
+      register: elixir_verify
+      changed_when: false
+
+    - name: Display Elixir version
+      debug:
+        msg: "{{ elixir_verify.stdout }}"
+
+  environment:
+    PATH: "{{ asdf_home }}/.asdf/shims:{{ asdf_home }}/.asdf/bin:{{ ansible_env.PATH }}"
   become: no
-  register: erlang_plugin_check
-  changed_when: false
-  failed_when: false
-
-- name: Add Erlang plugin to asdf
-  shell: |
-    asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
-  args:
-    executable: /bin/bash
-  become: no
-  when: erlang_plugin_check.rc != 0
-
-- name: Check if Elixir plugin is installed
-  shell: |
-    asdf plugin list | grep -q elixir
-  args:
-    executable: /bin/bash
-  become: no
-  register: elixir_plugin_check
-  changed_when: false
-  failed_when: false
-
-- name: Add Elixir plugin to asdf
-  shell: |
-    asdf plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
-  args:
-    executable: /bin/bash
-  become: no
-  when: elixir_plugin_check.rc != 0
-
-- name: Get latest Erlang version
-  shell: |
-    asdf list all erlang | grep -v -E 'rc|master' | tail -2 | head -1
-  args:
-    executable: /bin/bash
-  become: no
-  register: latest_erlang
-  changed_when: false
-
-- name: Check if latest Erlang version is installed
-  shell: |
-    asdf list erlang | grep -q "{{ latest_erlang.stdout }}"
-  args:
-    executable: /bin/bash
-  become: no
-  register: erlang_version_check
-  changed_when: false
-  failed_when: false
-
-- name: Install latest Erlang
-  shell: |
-    asdf install erlang {{ latest_erlang.stdout }}
-  args:
-    executable: /bin/bash
-  become: no
-  when: erlang_version_check.rc != 0
-
-- name: Set global Erlang version
-  shell: |
-    asdf set --home erlang {{ latest_erlang.stdout }}
-  args:
-    executable: /bin/bash
-  become: no
-  when: erlang_version_check.rc != 0
-
-- name: Get latest Elixir version
-  shell: |
-    asdf list all elixir | grep -v -E 'rc|master|otp' | tail -2 | head -1
-  args:
-    executable: /bin/bash
-  become: no
-  register: latest_elixir
-  changed_when: false
-
-- name: Check if latest Elixir version is installed
-  shell: |
-    asdf list elixir | grep -q "{{ latest_elixir.stdout }}"
-  args:
-    executable: /bin/bash
-  become: no
-  register: elixir_version_check
-  changed_when: false
-  failed_when: false
-
-- name: Install latest Elixir
-  shell: |
-    asdf install elixir {{ latest_elixir.stdout }}
-  args:
-    executable: /bin/bash
-  become: no
-  when: elixir_version_check.rc != 0
-
-- name: Set global Elixir version
-  shell: |
-    asdf set --home elixir {{ latest_elixir.stdout }}
-  args:
-    executable: /bin/bash
-  become: no
-  when: elixir_version_check.rc != 0
-
-- name: Verify Elixir installation
-  shell: |
-    elixir --version
-  args:
-    executable: /bin/bash
-  become: no
-  register: elixir_verify
-  changed_when: false
-
-- name: Display Elixir version
-  debug:
-    msg: "{{ elixir_verify.stdout }}"
 
 - name: Remind user to source bashrc
   debug:
