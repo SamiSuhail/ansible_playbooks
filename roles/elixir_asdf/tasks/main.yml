@@ -74,8 +74,8 @@
   blockinfile:
     path: "{{ asdf_home }}/.bashrc"
     block: |
-      . <(asdf completion bash)
       export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$PATH"
+      . <(asdf completion bash)
     marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
     create: yes
   become: no
