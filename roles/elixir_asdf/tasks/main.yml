@@ -146,7 +146,7 @@
 
     - name: Get latest Elixir version
       shell: |
-        asdf list all elixir | grep -v -E 'rc|master|otp' | tail -2 | head -1
+        asdf list all elixir | grep -v -E 'rc|master|main|otp' | tail -2 | head -1
       args:
         executable: /bin/bash
       register: latest_elixir
