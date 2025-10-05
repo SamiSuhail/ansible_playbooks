@@ -28,16 +28,9 @@ echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}Ubuntu Dev Environment Setup${NC}"
 echo -e "${GREEN}================================${NC}"
 
-while true; do
-    if ping -c 1 -W 2 8.8.8.8 &>/dev/null; then
-        success "Internet connection detected"
-        break
-    else
-        error "No internet connection detected"
-        echo "Please connect to the internet and press Enter to try again..."
-        read
-    fi
-done
+step "Step 0: Checking internet connection..."
+echo "Pinging 8.8.8.8, script exits on ping error."
+ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1
 
 step "Step 1: Installing system updates..."
 sudo apt update
@@ -81,12 +74,8 @@ fi
 step "Step 6: Running Ansible playbook..."
 ansible-playbook "$PLAYBOOK_PATH"
 
-step "Step 7: Source dotfiles..."
-source ~/.bash_profile
-source ~/.bashrc
-
 echo ""
 echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}Setup Complete!${NC}"
 echo -e "${GREEN}================================${NC}"
-echo "Your development environment is ready to use."
+echo -e "${RED}Please restart your machine to apply all updates!${NC}"

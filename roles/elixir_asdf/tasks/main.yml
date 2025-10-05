@@ -42,11 +42,6 @@
     asdf_latest_version: "{{ asdf_latest.json.tag_name }}"
   when: "'json' in asdf_latest and asdf_latest.json is defined"
 
-- name: Debug tag_name extraction
-  debug:
-    msg: "Tag name: {{ asdf_latest_version }}"
-  when: asdf_latest_version is defined
-
 - name: Download asdf release archive
   get_url:
     url: "https://github.com/asdf-vm/asdf/releases/download/{{ asdf_latest_version }}/asdf-{{ asdf_latest_version }}-linux-amd64.tar.gz"
@@ -75,20 +70,12 @@
   become: no
   when: not asdf_dir.stat.exists
 
-- name: Add asdf to bash_profile
-  blockinfile:
-    path: "{{ asdf_home }}/.bash_profile"
-    block: |
-      export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$PATH"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
-    create: yes
-  become: no
-
 - name: Add asdf to bashrc
   blockinfile:
     path: "{{ asdf_home }}/.bashrc"
     block: |
       . <(asdf completion bash)
+      export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$PATH"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - asdf"
     create: yes
   become: no
@@ -196,21 +183,6 @@
       register: elixir_verify
       changed_when: false
 
-    - name: Display Elixir version
-      debug:
-        msg: "{{ elixir_verify.stdout }}"
-
   environment:
     PATH: "{{ asdf_home }}/.asdf/shims:{{ asdf_home }}/.asdf/bin:{{ ansible_env.PATH }}"
   become: no
-
-- name: Remind user to source bashrc
-  debug:
-    msg: |
-      ✓ Elixir installed successfully!
-      
-      To use elixir, iex, and erl commands, run:
-        source ~/.bash_profile
-        source ~/.bashrc
-      
-      Or open a new terminal session.
