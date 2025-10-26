@@ -1,0 +1,22 @@
+---
+  - name: Add .NET PPA repository
+    apt_repository:
+      repo: ppa:dotnet/backports
+      state: present
+      update_cache: yes
+
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+
+  - name: Install .NET SDK
+    apt:
+      name: dotnet-sdk-9.0
+      state: present
+      update_cache: yes
+
+  - name: Install Rider via snap
+    snap:
+      name: rider
+      classic: yes
+      state: present

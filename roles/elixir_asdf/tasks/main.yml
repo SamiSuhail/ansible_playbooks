@@ -9,21 +9,6 @@
   set_fact:
     asdf_home: "{{ user_home.stdout }}"
 
-- name: Install required system dependencies
-  apt:
-    name:
-      - git
-      - curl
-      - build-essential
-      - autoconf
-      - libssl-dev
-      - libncurses5-dev
-      - m4
-      - unzip
-    state: present
-    update_cache: yes
-  become: yes
-
 - name: Check if asdf is already installed
   stat:
     path: "{{ asdf_home }}/.asdf"

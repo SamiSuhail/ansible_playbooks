@@ -3,14 +3,22 @@
   apt:
     name:
       - tree
+      - ca-certificates
       - curl
       - htop
       - ncdu
       - tldr
       - jq
       - wget
+      - apt-transport-https
+      - software-properties-common
       - unzip
       - zip
+      - git
+      - autoconf
+      - libssl-dev
+      - libncurses5-dev
+      - m4
     state: present
 
 - name: Install development tools

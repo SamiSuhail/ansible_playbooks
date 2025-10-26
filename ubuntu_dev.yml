@@ -7,5 +7,7 @@
     - timeshift_backup
     - cli_utilities
     - chrome
+    - docker
     - elixir_asdf
     - vscode
+    - dotnet
