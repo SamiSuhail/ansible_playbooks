@@ -19,6 +19,7 @@
       - libssl-dev
       - libncurses5-dev
       - m4
+      - npm
     state: present
 
 - name: Install development tools
