@@ -20,6 +20,7 @@
       - libncurses5-dev
       - m4
       - npm
+      - libreoffice
     state: present
 
 - name: Install development tools
