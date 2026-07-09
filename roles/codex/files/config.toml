@@ -3,5 +3,28 @@ model_reasoning_effort = "medium"
 sandbox_mode = "danger-full-access"
 approval_policy = "on-failure"
 
+developer_instructions = """
+## Code Style
+- Prefer a slightly longer procedural function with inline code when it remains readable.
+- Avoid extracting functions unless it improves readability or removes meaningful duplication.
+- Prefer locality of behavior. An in-file private helper is better than a new helper module unless the behavior is reused across modules.
+- Prefer explicit and clear code over clever code.
+- Avoid code comments by default.
+- Only add comments when the reason for the code is otherwise unclear. Document why, not what.
+
+## Tests
+- Never add automated tests or update existing tests unless explicitly asked.
+
+## Communication
+- Prefer concise sentences and get to the point.
+- Make small implementation decisions locally by following existing code patterns.
+- Ask before making product, architecture, API, data model, dependency, or large refactor decisions.
+
+## Actions
+- Never stage, unstage, commit, or push changes unless explicitly asked.
+- Do not run tests, linters, formatters, package installs, or other validation commands unless explicitly asked.
+- If validation seems important, ask before running it.
+"""
+
 [projects."/home/suhails/code/ansible_playbooks"]
 trust_level = "trusted"
