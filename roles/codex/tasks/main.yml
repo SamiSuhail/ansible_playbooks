@@ -1,0 +1,49 @@
+---
+- name: Get the current user home
+  shell: echo $HOME
+  register: user_home
+  changed_when: false
+  become: false
+
+- name: Set Codex variables
+  set_fact:
+    codex_home: "{{ user_home.stdout }}"
+
+- name: Install Codex CLI dependencies
+  apt:
+    name:
+      - ca-certificates
+      - curl
+    state: present
+
+- name: Check if Codex CLI is installed
+  shell: test -x "$HOME/.local/bin/codex" || command -v codex
+  args:
+    executable: /bin/bash
+  register: codex_check
+  changed_when: false
+  failed_when: false
+  become: false
+
+- name: Install Codex CLI
+  shell: curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
+  args:
+    executable: /bin/bash
+  become: false
+  when: codex_check.rc != 0
+
+- name: Create Codex config directory
+  file:
+    path: "{{ codex_home }}/.codex"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    mode: '0700'
+
+- name: Install Codex config
+  copy:
+    src: config.toml
+    dest: "{{ codex_home }}/.codex/config.toml"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    mode: '0600'

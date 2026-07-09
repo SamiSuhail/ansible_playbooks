@@ -12,7 +12,7 @@
 
 - name: Update apt cache
   apt:
-    update_cache: yes
+    update_cache: true
 
 - name: Install Google Chrome
   apt:
@@ -20,6 +20,6 @@
     state: present
 
 - name: Set Google Chrome as default browser
-  become: no
+  become: false
   command: xdg-settings set default-web-browser google-chrome.desktop
   changed_when: false

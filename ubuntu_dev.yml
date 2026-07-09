@@ -1,7 +1,7 @@
 ---
 - name: Setup Ubuntu Development Environment
   hosts: localhost
-  become: yes
+  become: true
 
   roles:
     - timeshift_backup
@@ -9,5 +9,8 @@
     - chrome
     - docker
     - elixir_asdf
+    - lua
+    - ghostty
     - vscode
+    - codex
     - dotnet

@@ -1,0 +1,74 @@
+---
+- name: Install Lua build dependencies
+  apt:
+    name:
+      - build-essential
+      - ca-certificates
+      - curl
+    state: present
+
+- name: Find latest Lua release from lua.org
+  shell: |
+    curl -fsSL https://www.lua.org/ftp/ |
+    awk '/lua-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz/ {
+      match($0, /lua-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz/)
+      file=substr($0, RSTART, RLENGTH)
+      getline; getline; getline
+      match($0, /[0-9a-f]{64}/)
+      sum=substr($0, RSTART, RLENGTH)
+      version=file
+      sub(/^lua-/, "", version)
+      sub(/\.tar\.gz$/, "", version)
+      print version, file, sum
+    }' | sort -V -k1,1 | tail -1
+  args:
+    executable: /bin/bash
+  register: latest_lua_release
+  changed_when: false
+
+- name: Set Lua release variables
+  set_fact:
+    lua_version: "{{ latest_lua_release.stdout.split()[0] }}"
+    lua_archive: "{{ latest_lua_release.stdout.split()[1] }}"
+    lua_sha256: "{{ latest_lua_release.stdout.split()[2] }}"
+    lua_source_dir: "/tmp/lua-{{ latest_lua_release.stdout.split()[0] }}"
+
+- name: Check installed Lua version
+  shell: lua -v 2>&1 | awk '{print $2}'
+  args:
+    executable: /bin/bash
+  register: installed_lua_version
+  changed_when: false
+  failed_when: false
+
+- name: Download Lua source archive
+  get_url:
+    url: "https://www.lua.org/ftp/{{ lua_archive }}"
+    dest: "/tmp/{{ lua_archive }}"
+    checksum: "sha256:{{ lua_sha256 }}"
+    mode: '0644'
+  when: installed_lua_version.stdout != lua_version
+
+- name: Extract Lua source archive
+  unarchive:
+    src: "/tmp/{{ lua_archive }}"
+    dest: /tmp
+    remote_src: true
+  when: installed_lua_version.stdout != lua_version
+
+- name: Build and test Lua
+  command: make all test
+  args:
+    chdir: "{{ lua_source_dir }}"
+  when: installed_lua_version.stdout != lua_version
+
+- name: Install Lua
+  command: make install INSTALL_TOP=/usr/local
+  args:
+    chdir: "{{ lua_source_dir }}"
+  when: installed_lua_version.stdout != lua_version
+
+- name: Verify Lua installation
+  command: lua -v
+  register: lua_verify
+  changed_when: false
